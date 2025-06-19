@@ -206,7 +206,10 @@
             </section>
         </main>
         <footer class="bg-slate-900/50 text-white py-12 mt-16">
-            <div class="container mx-auto px-4 text-center text-slate-400"><p>© 2025 XMAKEHUB AI造物所. 保留所有权利.</p></div>
+            <div class="container mx-auto px-4 text-center text-slate-400">
+                <p>© 2025 XMAKEHUB AI造物所. 保留所有权利.</p>
+                <p class="mt-2"><a href="#" id="admin-login-link" class="text-xs text-slate-500 hover:text-sky-400">管理员入口</a></p>
+            </div>
         </footer>
     </div>
     
@@ -366,6 +369,45 @@
     <!-- 通知模态框 -->
     <div id="notification-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-[100] flex items-center justify-center p-4"><div class="bg-slate-800 rounded-lg p-8 shadow-2xl max-w-md w-full border border-slate-600"><h3 id="modal-title" class="text-xl font-bold mb-4 text-white"></h3><div id="modal-message" class="text-slate-300 mb-6 break-words"></div><button id="modal-close-button" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-medium py-2 px-6 rounded-lg">关闭</button></div></div>
 
+    <!-- 管理员登录模态框 -->
+    <div id="admin-login-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-[100] flex items-center justify-center p-4">
+        <div class="bg-slate-800 rounded-lg p-8 shadow-2xl max-w-sm w-full border border-slate-600 glass-card">
+            <h3 class="text-xl font-bold mb-4 text-white text-center">管理员登录</h3>
+            <form id="admin-login-form">
+                <div class="mb-4">
+                    <label for="admin-username" class="block text-slate-300 font-semibold mb-2">账号</label>
+                    <input type="text" id="admin-username" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg focus:ring-2 focus:ring-sky-500 text-white" required>
+                </div>
+                <div class="mb-6">
+                    <label for="admin-password" class="block text-slate-300 font-semibold mb-2">密码</label>
+                    <input type="password" id="admin-password" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg focus:ring-2 focus:ring-sky-500 text-white" required>
+                </div>
+                 <p id="login-error-msg" class="text-red-400 text-sm mb-4 hidden"></p>
+                <button type="submit" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-medium py-3 px-8 rounded-lg">登录</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- API密钥管理模态框 -->
+    <div id="api-key-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-[100] flex items-center justify-center p-4">
+        <div class="bg-slate-800 rounded-lg p-8 shadow-2xl max-w-lg w-full border border-slate-600 glass-card">
+            <h3 class="text-xl font-bold mb-6 text-white text-center">API 密钥管理</h3>
+            <div class="mb-4">
+                <label for="openai-key-input" class="block text-slate-300 font-semibold mb-2">OpenAI API Key</label>
+                <input type="password" id="openai-key-input" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg focus:ring-2 focus:ring-sky-500 text-white">
+            </div>
+            <div class="mb-6">
+                <label for="google-key-input" class="block text-slate-300 font-semibold mb-2">Google API Key</label>
+                <input type="password" id="google-key-input" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg focus:ring-2 focus:ring-sky-500 text-white">
+            </div>
+            <div class="flex gap-4">
+                <button id="save-api-keys-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-8 rounded-lg">更新密钥</button>
+                <button id="close-key-modal-btn" class="w-full bg-slate-600 hover:bg-slate-500 text-white font-medium py-2 px-6 rounded-lg">关闭</button>
+            </div>
+        </div>
+    </div>
+
+
     <script type="module">
     document.addEventListener('DOMContentLoaded', () => {
         // --- DOM & 视图管理 ---
@@ -398,14 +440,32 @@
         const promptHelperOutput = document.getElementById('prompt-helper-output');
         const promptHelperApplyBtn = document.getElementById('prompt-helper-apply-btn');
         const promptHelperCloseBtn = document.getElementById('prompt-helper-close-btn');
+        
+        // Admin Elements
+        const adminLoginLink = document.getElementById('admin-login-link');
+        const adminLoginModal = document.getElementById('admin-login-modal');
+        const adminLoginForm = document.getElementById('admin-login-form');
+        const apiKeyModal = document.getElementById('api-key-modal');
+        const openaiKeyInput = document.getElementById('openai-key-input');
+        const googleKeyInput = document.getElementById('google-key-input');
+        const saveApiKeysBtn = document.getElementById('save-api-keys-btn');
+        const closeKeyModalBtn = document.getElementById('close-key-modal-btn');
+        const loginErrorMsg = document.getElementById('login-error-msg');
+
 
         // --- API 配置 ---
-        const OPENAI_API_KEY = "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";
-        const GOOGLE_API_KEY = "AIzaSyDJH7WRf67xuKh-qNCkoFqc3mCbREEZdns";
-        const GOOGLE_GEMINI_STREAM_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:streamGenerateContent?key=${GOOGLE_API_KEY}`;
-        const GOOGLE_GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GOOGLE_API_KEY}`;
-        const OPENAI_IMAGE_API_URL = 'https://api.openai.com/v1/images/generations';
-        const OPENAI_TTS_API_URL = 'https://api.openai.com/v1/audio/speech';
+        let OPENAI_API_KEY = localStorage.getItem('openai_api_key') || "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";
+        let GOOGLE_API_KEY = localStorage.getItem('google_api_key') || "AIzaSyDJH7WRf67xuKh-qNCkoFqc3mCbREEZdns";
+        
+        let GOOGLE_GEMINI_STREAM_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:streamGenerateContent?key=${GOOGLE_API_KEY}`;
+        let GOOGLE_GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GOOGLE_API_KEY}`;
+        let OPENAI_IMAGE_API_URL = 'https://api.openai.com/v1/images/generations';
+        let OPENAI_TTS_API_URL = 'https://api.openai.com/v1/audio/speech';
+        
+        function updateApiUrls() {
+            GOOGLE_GEMINI_STREAM_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:streamGenerateContent?key=${GOOGLE_API_KEY}`;
+            GOOGLE_GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GOOGLE_API_KEY}`;
+        }
 
         // --- 状态管理 ---
         let chatHistory = [];
@@ -939,6 +999,50 @@ ${sceneProductImage.src.substring(0, 100)}...
         });
         modalCloseButton.onclick = () => modal.classList.add('hidden');
         startCreationLink.onclick = (e) => { e.preventDefault(); document.querySelector('#creation-process').scrollIntoView({ behavior: 'smooth' }); };
+
+        // Admin Logic
+        adminLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            adminLoginModal.classList.remove('hidden');
+        });
+
+        adminLoginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('admin-username').value;
+            const password = document.getElementById('admin-password').value;
+            if (username === 'finewood' && password === 'alove123') {
+                adminLoginModal.classList.add('hidden');
+                apiKeyModal.classList.remove('hidden');
+                openaiKeyInput.value = OPENAI_API_KEY;
+                googleKeyInput.value = GOOGLE_API_KEY;
+            } else {
+                loginErrorMsg.textContent = "账号或密码错误。";
+                loginErrorMsg.classList.remove('hidden');
+            }
+        });
+
+        saveApiKeysBtn.addEventListener('click', () => {
+            const newOpenAIKey = openaiKeyInput.value.trim();
+            const newGoogleKey = googleKeyInput.value.trim();
+
+            if(newOpenAIKey) {
+                OPENAI_API_KEY = newOpenAIKey;
+                localStorage.setItem('openai_api_key', newOpenAIKey);
+            }
+            if(newGoogleKey) {
+                GOOGLE_API_KEY = newGoogleKey;
+                localStorage.setItem('google_api_key', newGoogleKey);
+                updateApiUrls();
+            }
+            
+            apiKeyModal.classList.add('hidden');
+            showNotification("成功", "API密钥已更新。");
+        });
+
+        closeKeyModalBtn.addEventListener('click', () => {
+            apiKeyModal.classList.add('hidden');
+        });
+
 
         // 初始化情绪选择器
         const emotions = ['🙂', '😊', '💡', '🤔', '😂', '😮', '😢', '👍', '😍'];
